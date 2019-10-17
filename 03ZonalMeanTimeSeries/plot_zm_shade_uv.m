@@ -13,37 +13,26 @@ clearvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %where is the data?
-Settings.DataFile = 'zm_ts.mat';
+Settings.DataFile = 'zm_ts_uv.mat';
 
 %smooth?
-Settings.SmoothSize = 7; %days
+Settings.SmoothSize = 1; %days
 
 %fill small gaps?
-Settings.GapFill = 7; %days
+Settings.GapFill = 1; %days
 
 %what var?
-% Settings.VarName = 'A';
-% Settings.VarTitle = 'wave amplitude [K]';
-% Settings.VarName = 'MF';
-% Settings.VarTitle = 'wave momentum flux [mPa]';
-Settings.VarName = 'Mz';
-Settings.VarTitle = 'wave zonal momentum flux [mPa]';
-% Settings.VarName = 'Mm';
-% Settings.VarTitle = 'wave meridional momentum flux [mPa]';
-
+Settings.VarName = 'u';
+Settings.VarTitle = 'zonal wind [m/s]';
 
 %what height?
 Settings.HeightLevel = p2h(10); %km
 
 %years to highlight. years and colours must correspond
-% Settings.SpecialYears   = [2002,2019,2004,2010];
-% Settings.SpecialColours = [1,0,0;
-%                            0,0,1;
-%                            0.52,0.87,0.01;
-%                            1,.75,0];
 Settings.SpecialYears   = [2002,2019];
 Settings.SpecialColours = [1,0,0;
                            0,0,1];
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %load and prep data
@@ -52,16 +41,19 @@ Settings.SpecialColours = [1,0,0;
 %load data
 Data = load(Settings.DataFile);
 
+%temporary
+if ~isfield(Data,'Settings')
+  Data.Settings.DataDir   = [LocalDataDir,'/corwin/ssw_airs/'];
+  Data.Settings.LatBand   = [-65,-55];
+  Data.Settings.Altitudes = [30,35,40,45,50];
+  Data.Settings.Years     = 2002:1:2019;
+  Data.Settings.Vars      = {'u','v'};
+end
+
 %select var
 VarId = find(strcmp(Data.Settings.Vars,Settings.VarName));
 Data.Results = squeeze(Data.Results(VarId,:,:,:));
 clear VarId
-
-%if it's wavenumber, flip it to wavelength
-if strcmp(Settings.VarName,'kh');
-  Data.Results = 1./Data.Results;
-  Settings.VarName = 'lh';
-end
 
 %select height
 zidx = closest(Data.Settings.Altitudes,Settings.HeightLevel);
@@ -69,11 +61,7 @@ Settings.HeightLevel = Data.Settings.Altitudes(zidx); %to be precise
 Data.Results = squeeze(Data.Results(zidx,:,:));
 clear zidx
 
-%sort special years
-[~,idx] = sort(Settings.SpecialYears,'ascend');
-Settings.SpecialYears = Settings.SpecialYears(idx);
-Settings.SpecialColours = Settings.SpecialColours(idx,:);
-clear idx
+
 
 
 
@@ -163,7 +151,7 @@ ylabel(['Zonal mean ',Settings.VarTitle])
 %add annotations
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-text(0.02,0.95,'NASA/AIRS 3DST GWs','Units','normalized')
+text(0.02,0.95,'ERA5','Units','normalized')
 text(0.02,0.90,['60S, z=',num2str(Settings.HeightLevel),'km'],'Units','normalized')
 for iYear=1:1:numel(Settings.SpecialYears)
   text(0.02,0.90-0.05.*iYear,num2str(Settings.SpecialYears(iYear)), ...
@@ -171,7 +159,7 @@ for iYear=1:1:numel(Settings.SpecialYears)
        'color', Settings.SpecialColours(iYear,:), ...
        'fontweight','bold')
 end
-text(0.02,0.05,'Data supplied by NASA and retrieved by Lars Hoffman, Fz Juelich', ...
+text(0.02,0.05,'Data supplied by Copernicus and ECMWF', ...
                'fontsize',8,'Units','normalized')
-text(0.02,0.02,'GW analysis by Corwin Wright, Univ. Bath', ...
+text(0.02,0.02,'Analysed and plotted by Corwin Wright, Univ. Bath', ...
                'fontsize',8,'Units','normalized')             
